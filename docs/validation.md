@@ -30,4 +30,4 @@
 
 安装校验、文档审计、工具测试、实际客户端发现、真实成片审阅、用户验收分别记录。CI 通过只证明受测的技术契约。它不证明声线自然、素材真的匹配、版权判断正确或“世界级”质感。
 
-本地实际发行检查使用 Python 3.9 / FFmpeg 7.1 / FFprobe 4.4.1；仓库 CI 使用 Python 3.9 与 3.12、Ubuntu 提供的 FFmpeg 和 Noto CJK 字体。具体远端运行结果以 [Actions](https://github.com/delu543/ai-video-production/actions) 为准，不把配置存在说成已通过。
+本地实际发行检查使用 Python 3.9 / FFmpeg 7.1 / FFprobe 4.4.1；仓库 CI 使用 Python 3.9 与 3.12、固定 Ubuntu 24.04 的 FFmpeg 和 Noto CJK 字体。Actions 固定官方发行的提交 SHA，使用 Node 24，并不在工作区保留 Git 凭证。具体远端运行结果以 [Actions](https://github.com/delu543/ai-video-production/actions) 为准，不把配置存在说成已通过。
