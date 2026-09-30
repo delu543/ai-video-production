@@ -12,13 +12,14 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1, Node 24
         with:
           persist-credentials: false
+          fetch-depth: 0
       - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0, Node 24
         with:
           python-version: ${{ matrix.python }}
       - name: Install render tools and multilingual font
         run: sudo apt-get update && sudo apt-get install -y ffmpeg fonts-noto-cjk
       - name: Audit portable package
-        run: python scripts/audit_repository.py
+        run: python scripts/audit_repository.py --history
       - name: Unit and actual encode integration tests
         env:
           REQUIRE_MEDIA_TESTS: '1'

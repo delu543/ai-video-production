@@ -1,0 +1,21 @@
+{
+  "schema_version": 1,
+  "copyright_holder": "delu543",
+  "default_license": "MIT",
+  "default_license_file": "LICENSE",
+  "data_license": "CC0-1.0",
+  "data_license_file": "LICENSES/CC0-1.0.txt",
+  "data_files": [
+    "skills/ai-video-production/assets/brief.example.json",
+    "skills/ai-video-production/assets/project.example.json"
+  ],
+  "excluded_categories": [
+    "third_party_media",
+    "third_party_tools_and_fonts",
+    "private_project_data",
+    "voice_and_likeness",
+    "provider_outputs_and_terms"
+  ],
+  "third_party_notice_file": "THIRD_PARTY_NOTICES.md",
+  "license_text_copy_source": "https://github.com/spdx/license-list-data/blob/main/text/CC0-1.0.txt"
+}
