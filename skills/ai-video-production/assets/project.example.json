@@ -1,0 +1,201 @@
+{
+  "schema_version": 1,
+  "title": "格式说明示例，不是已研究的脚本",
+  "profile": {
+    "width": 1920,
+    "height": 1080,
+    "fps": 30,
+    "crf": 18,
+    "preset": "veryfast",
+    "font": "Noto Sans CJK SC",
+    "top_language": "zh",
+    "bottom_language": "en",
+    "top_font_size": 40,
+    "bottom_font_size": 34,
+    "fade_in": 0.6,
+    "fade_out": 0.8
+  },
+  "quality": {
+    "max_asset_uses": 2,
+    "allow_generated_visuals": false
+  },
+  "audio_profile": {
+    "target_lufs": -16,
+    "true_peak": -2,
+    "delivery_true_peak": -1.5
+  },
+  "budget": {
+    "currency": "CNY",
+    "cap": 0,
+    "authorization": ""
+  },
+  "voice": {
+    "approved": false,
+    "provider": null,
+    "model": null,
+    "voice_id": null,
+    "language": "en",
+    "expression": "natural_young_clear_steady",
+    "pronunciation": {}
+  },
+  "facts": [
+    {
+      "id": "f1",
+      "claim": "在此填写经过研究的事实，示例未核查",
+      "event_date": null,
+      "status": "pending",
+      "sources": []
+    }
+  ],
+  "beats": [
+    {
+      "id": "b1",
+      "narration": "Write the verified opening narration here.",
+      "fact_ids": [
+        "f1"
+      ],
+      "picture_intent": "实际对象/动作，说明这一句"
+    },
+    {
+      "id": "b2",
+      "narration": "Write the next explanation here.",
+      "fact_ids": [],
+      "picture_intent": "对象的细节或因果变化"
+    }
+  ],
+  "assets": {
+    "v1": {
+      "kind": "video",
+      "path": "assets/wide.mp4",
+      "source_group": "v1",
+      "origin": "real",
+      "source_url": "https://example.org/replace-with-original-item",
+      "creator": "填写原作者",
+      "recorded_date": null,
+      "depicted_date": null,
+      "duration": 20,
+      "rights_status": "needs_review",
+      "rights_basis": "",
+      "license_url": "",
+      "quality": {
+        "effective_width": 1920,
+        "effective_height": 1080,
+        "review": "pending",
+        "exception_reason": ""
+      }
+    },
+    "v2": {
+      "kind": "video",
+      "path": "assets/detail.mp4",
+      "source_group": "v2",
+      "origin": "real",
+      "source_url": "https://example.org/replace-with-original-item",
+      "creator": "填写原作者",
+      "recorded_date": null,
+      "depicted_date": null,
+      "duration": 20,
+      "rights_status": "needs_review",
+      "rights_basis": "",
+      "license_url": "",
+      "quality": {
+        "effective_width": 1920,
+        "effective_height": 1080,
+        "review": "pending",
+        "exception_reason": ""
+      }
+    },
+    "voice": {
+      "kind": "audio",
+      "path": "audio/narration.wav",
+      "source_group": "voice",
+      "origin": "generated",
+      "source_url": "https://example.org/replace-with-authorized-provider",
+      "creator": "填写已选TTS服务",
+      "duration": 9.4,
+      "rights_status": "needs_review",
+      "rights_basis": ""
+    }
+  },
+  "shots": [
+    {
+      "id": "s1",
+      "asset_id": "v1",
+      "beat_id": "b1",
+      "purpose": "建立真实对象与问题",
+      "source_in": 1,
+      "duration": 5,
+      "framing": "cover",
+      "transition": {
+        "type": "cut",
+        "duration": 0
+      }
+    },
+    {
+      "id": "s2",
+      "asset_id": "v2",
+      "beat_id": "b2",
+      "purpose": "展示同一过程的关键细节",
+      "source_in": 2,
+      "duration": 5,
+      "framing": "cover",
+      "transition": {
+        "type": "dissolve",
+        "duration": 0.6,
+        "relation": "从对象全景进入相关细节"
+      }
+    }
+  ],
+  "captions": [
+    {
+      "start": 0.3,
+      "end": 3.5,
+      "top": "在此写校对后的中文译文",
+      "bottom": "Write the checked English text here."
+    },
+    {
+      "start": 5,
+      "end": 8,
+      "top": "字幕以最终声音对齐",
+      "bottom": "Align captions to the final audio."
+    }
+  ],
+  "audio_cues": [
+    {
+      "id": "narration1",
+      "asset_id": "voice",
+      "role": "narration",
+      "start": 0,
+      "source_in": 0,
+      "duration": 9.4,
+      "gain_db": 0,
+      "fade_in": 0.02,
+      "fade_out": 0.05
+    }
+  ],
+  "master_audio": "audio/master.wav",
+  "music_plan": {
+    "palette": "柔和器乐、清晰脉冲、温暖克制，不争抢语言",
+    "segments": [
+      {
+        "start": 0,
+        "end": 4.4,
+        "intent": "建立好奇，保持轻薄"
+      },
+      {
+        "start": 4.4,
+        "end": 9.4,
+        "intent": "解释机制，适度推进"
+      }
+    ]
+  },
+  "reuse_exceptions": {},
+  "reviews": {
+    "editorial": "pending",
+    "picture": "pending",
+    "voice": "pending",
+    "music": "pending",
+    "captions": "pending",
+    "continuity": "pending",
+    "listening": "pending"
+  }
+}

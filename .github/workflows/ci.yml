@@ -1,0 +1,23 @@
+name: Workflow quality
+on: [push, pull_request, workflow_dispatch]
+permissions:
+  contents: read
+jobs:
+  offline-and-render:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python: ['3.9', '3.12']
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5.6.0
+        with:
+          python-version: ${{ matrix.python }}
+      - name: Install render tools and multilingual font
+        run: sudo apt-get update && sudo apt-get install -y ffmpeg fonts-noto-cjk
+      - name: Audit portable package
+        run: python scripts/audit_repository.py
+      - name: Unit and actual encode integration tests
+        env:
+          REQUIRE_MEDIA_TESTS: '1'
+        run: python -m unittest discover -s tests -v

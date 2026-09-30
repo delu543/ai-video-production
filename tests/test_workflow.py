@@ -1,0 +1,238 @@
+import copy
+import importlib.util
+import json
+import os
+from pathlib import Path
+import subprocess
+import sys
+import tempfile
+import unittest
+
+ROOT = Path(__file__).resolve().parent.parent
+SCRIPTS = ROOT / "skills/ai-video-production/scripts"
+sys.path.insert(0, str(SCRIPTS))
+from core import binary, fingerprint, media_path, read_json, run, timing, validate
+from captions import create, escape_ass
+from audio import mix
+from render import render, frame_count
+from qa import audit, review_frames
+from costs import reserve, settle
+from video import init_project
+
+
+def fixture():
+    p = read_json(ROOT / "skills/ai-video-production/assets/project.example.json")
+    p["profile"].update(width=640, height=360, fade_in=0, fade_out=0)
+    p["facts"] = []
+    p["beats"] = [{"id": "b1", "narration": "Engineering test only.", "fact_ids": []},
+                  {"id": "b2", "narration": "A related detail.", "fact_ids": []}]
+    p["assets"] = {}
+    for aid, kind, w, h in [("wide", "video", 640, 360), ("portrait", "video", 360, 640), ("photo", "still", 640, 360)]:
+        p["assets"][aid] = {"kind": kind, "path": f"assets/{aid}.{'png' if kind == 'still' else 'mp4'}",
+                               "origin": "synthetic_test", "source_group": aid,
+                               "source_url": f"urn:test:{aid}", "creator": "local test generator",
+                               "duration": 5, "rights_status": "cleared", "rights_basis": "self-created test fixture",
+                               "quality": {"effective_width": w, "effective_height": h, "review": "passed"}}
+    for aid in ["voice", "music"]:
+        p["assets"][aid] = {"kind": "audio", "path": f"audio/{aid}.wav", "origin": "synthetic_test",
+                               "source_url": f"urn:test:{aid}", "creator": "local sine generator",
+                               "duration": 5, "rights_status": "cleared", "rights_basis": "self-created test fixture"}
+    p["shots"] = [
+        {"id": "s1", "asset_id": "wide", "beat_id": "b1", "purpose": "test wide picture", "source_in": .2,
+         "duration": 1.4, "framing": "cover", "transition": {"type": "cut", "duration": 0}},
+        {"id": "s2", "asset_id": "portrait", "beat_id": "b2", "purpose": "test preserved portrait", "source_in": .3,
+         "duration": 1.7, "framing": "contain", "transition": {"type": "dissolve", "duration": .3, "relation": "related detail"}},
+        {"id": "s3", "asset_id": "photo", "beat_id": "b2", "purpose": "test meaningful still", "duration": 1.5,
+         "framing": "cover", "zoom": .02, "transition": {"type": "dissolve", "duration": .4, "relation": "same object in another medium"}}]
+    p["captions"] = [{"start": .1, "end": 1.1, "top": "真实素材工作流测试", "bottom": "Workflow test."},
+                     {"start": 1.4, "end": 3.5, "top": "中文在上\n测试两行", "bottom": "Chinese above English.\nTwo-line layout test."}]
+    p["audio_cues"] = [{"id": "n1", "asset_id": "voice", "role": "narration", "start": 0,
+                         "source_in": 0, "duration": 3.9, "gain_db": 0, "fade_in": .02, "fade_out": .1},
+                        {"id": "m1", "asset_id": "music", "role": "music", "start": 0, "source_in": 0,
+                         "duration": 3.9, "selection_reason": "test music automation, not real score",
+                         "gain_db": -20, "envelope": [[0, -20], [1, -26], [3.4, -22], [3.9, -30]],
+                         "fade_in": .3, "fade_out": .3}]
+    return p
+
+
+class ContractTests(unittest.TestCase):
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+        self.root = Path(self.tmp.name)
+        self.p = fixture()
+
+    def tearDown(self):
+        self.tmp.cleanup()
+
+    def check(self):
+        return validate(self.p, self.root, allow_test=True)
+
+    def test_valid_design_and_global_frames(self):
+        report = self.check()
+        self.assertTrue(report["ok"], report)
+        self.assertEqual(report["frames"], 117)
+        self.assertAlmostEqual(report["duration"], 3.9)
+
+    def test_synthetic_is_not_production_media(self):
+        self.assertFalse(validate(self.p, self.root)["ok"])
+
+    def test_unrelated_cut_rejected(self):
+        self.p["shots"][1]["transition"] = {"type": "cut", "duration": 0}
+        self.assertTrue(any("relation missing" in e for e in self.check()["errors"]))
+
+    def test_related_direct_cut_requires_reason(self):
+        self.p["shots"][1]["transition"] = {"type": "cut", "duration": 0, "relation": "continuous action"}
+        self.assertTrue(any("cut needs" in e for e in self.check()["errors"]))
+
+    def test_source_interval_rejected(self):
+        self.p["shots"][0]["source_in"] = 4.7
+        self.assertTrue(any("source interval" in e for e in self.check()["errors"]))
+
+    def test_effective_resolution_not_nominal_label(self):
+        self.p["assets"]["wide"]["quality"].update(effective_width=160, effective_height=90)
+        self.assertTrue(any("upscale" in e for e in self.check()["errors"]))
+
+    def test_aliases_cannot_hide_source_reuse(self):
+        for asset in self.p["assets"].values():
+            asset["source_group"] = "one_original_file"
+        self.assertTrue(any("3 uses" in e for e in self.check()["errors"]))
+
+    def test_short_shot_cannot_be_eaten_by_two_transitions(self):
+        self.p["shots"][1]["duration"] = .6
+        self.assertFalse(self.check()["ok"])
+
+    def test_caption_overlap_rejected(self):
+        self.p["captions"][1]["start"] = .9
+        self.assertTrue(any("Caption overlaps" in e for e in self.check()["errors"]))
+
+    def test_unverified_fact_blocks_design(self):
+        self.p["facts"] = [{"id": "f1", "claim": "An unchecked claim", "status": "pending", "sources": []}]
+        self.p["beats"][0]["fact_ids"] = ["f1"]
+        self.assertFalse(self.check()["ok"])
+
+    def test_generated_visuals_rejected(self):
+        self.p["assets"]["wide"]["origin"] = "generated"
+        self.assertTrue(any("generated visuals forbidden" in e for e in self.check()["errors"]))
+
+    def test_unknown_rights_block_publish(self):
+        self.p["assets"]["wide"]["rights_status"] = "needs_review"
+        report = validate(self.p, self.root, "publish", allow_test=True)
+        self.assertTrue(any("rights not cleared" in e for e in report["errors"]))
+
+    def test_caption_anchors_and_override_sanitization(self):
+        ass, srt = create(self.p, self.root)
+        text = ass.read_text()
+        self.assertIn("中文在上\\N测试两行", text)
+        self.assertIn("真实素材工作流测试", srt.read_text())
+        self.assertNotIn("{\\pos", escape_ass("{\\pos(0,0)}injection"))
+        self.assertIn("Style: Top", text)
+        self.assertIn("Style: Bottom", text)
+
+    def test_path_traversal_and_symlink_escape(self):
+        with self.assertRaises(ValueError):
+            media_path(self.root, "../outside.mp4")
+        link = self.root / "link"
+        link.symlink_to(self.root.parent, target_is_directory=True)
+        with self.assertRaises(ValueError):
+            media_path(self.root, "link/outside.mp4")
+
+    def test_unknown_charge_and_duplicate_action_are_not_retried(self):
+        self.p["budget"] = {"cap": 1, "currency": "CNY", "authorization": "test-only budget, no real API"}
+        reserve(self.root, self.p, "a", "test", "input1", .6, "test pricing")
+        for action, fingerprint_value, maximum in [("a", "other", .1), ("b", "input1", .1), ("b", "other", .5)]:
+            with self.assertRaises(ValueError):
+                reserve(self.root, self.p, action, "test", fingerprint_value, maximum, "test pricing")
+        settle(self.root, "a", .3, "local-test")
+        self.assertFalse(read_json(self.root / "costs.json")["entries"][0]["invoice_verified"])
+        reserve(self.root, self.p, "b", "test", "input2", .6, "test pricing")
+
+    def test_actual_cost_over_reservation_stops_new_calls(self):
+        self.p["budget"] = {"cap": 1, "currency": "CNY", "authorization": "test only"}
+        reserve(self.root, self.p, "a", "test", "input1", .3, "test pricing")
+        settle(self.root, "a", .4, "test")
+        with self.assertRaises(ValueError):
+            reserve(self.root, self.p, "b", "test", "input2", .1, "test pricing")
+
+    def test_zero_budget_cannot_call_paid_provider(self):
+        with self.assertRaises(ValueError):
+            reserve(self.root, self.p, "a", "test", "input", .1, "test pricing")
+
+    def test_init_preserves_existing_project_and_clears_example(self):
+        path = self.root / "new"
+        init_project(path)
+        self.assertEqual(read_json(path / "project.json")["shots"], [])
+        self.assertFalse(validate(read_json(path / "project.json"), path)["ok"])
+        with self.assertRaises(ValueError):
+            init_project(path)
+
+    def test_installer_is_idempotent_and_protects_local_edits(self):
+        spec = importlib.util.spec_from_file_location("installer", ROOT / "scripts/install_skill.py")
+        installer = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(installer)
+        path = self.root / "installed"
+        self.assertEqual(installer.install(path)["status"], "installed")
+        self.assertEqual(installer.install(path)["status"], "already_current")
+        (path / "SKILL.md").write_text("local changes")
+        with self.assertRaises(ValueError):
+            installer.install(path, update=True)
+
+
+class EncodeTests(unittest.TestCase):
+    def test_actual_multisource_bilingual_score_render_and_audit(self):
+        try:
+            ffmpeg = binary("ffmpeg")
+            binary("ffprobe")
+        except ValueError as exc:
+            if os.environ.get("REQUIRE_MEDIA_TESTS"):
+                self.fail(str(exc))
+            self.skipTest(str(exc))
+        tmp = tempfile.TemporaryDirectory()
+        if os.environ.get("VIDEO_TEST_OUTPUT"):
+            root = Path(os.environ["VIDEO_TEST_OUTPUT"])
+            root.mkdir(parents=True, exist_ok=True)
+        else:
+            root = Path(tmp.name)
+        try:
+            (root / "assets").mkdir(exist_ok=True)
+            (root / "audio").mkdir(exist_ok=True)
+            sources = [("wide", "testsrc2=size=640x360:rate=30"), ("portrait", "testsrc2=size=360x640:rate=30")]
+            for aid, source in sources:
+                run([ffmpeg, "-v", "error", "-f", "lavfi", "-i", source, "-t", "5", "-an",
+                     "-c:v", "libx264", "-threads", "2", "-pix_fmt", "yuv420p", "-y", root / f"assets/{aid}.mp4"])
+            run([ffmpeg, "-v", "error", "-f", "lavfi", "-i", "testsrc2=size=640x360:rate=30",
+                 "-frames:v", "1", "-threads", "1", "-y", root / "assets/photo.png"])
+            for aid, hz in [("voice", 440), ("music", 220)]:
+                run([ffmpeg, "-v", "error", "-f", "lavfi", "-i", f"sine=frequency={hz}:sample_rate=48000:duration=5",
+                     "-ac", "2", "-y", root / f"audio/{aid}.wav"])
+            p = fixture()
+            (root / "project.json").write_text(json.dumps(p, ensure_ascii=False))
+            preflight = validate(p, root, "render", allow_test=True)
+            self.assertTrue(preflight["ok"], preflight)
+            result = mix(p, root, root / "audio/master.wav")
+            self.assertEqual(result["listening_review"], "not_reviewed")
+            output = root / "film-test.mp4"
+            encoded = render(p, root, output)
+            self.assertEqual(encoded["frames"], 117)
+            self.assertEqual(frame_count(output), 117)
+            report = audit(p, output, root / "qa.json")
+            self.assertTrue(report["ok"], report["errors"])
+            self.assertEqual(report["listening_review"], "not_reviewed")
+            self.assertEqual(report["user_acceptance"], "not_assumed")
+            frames = review_frames(p, output, root / "review")
+            self.assertGreaterEqual(frames["frames"], 9)
+            bridges = sorted((root / "work/render").glob("bridge-*.mp4"))
+            self.assertEqual(len(bridges), 2)
+            # Replacing the right source changes its bridge's cache key, even with same framing/timing.
+            run([ffmpeg, "-v", "error", "-f", "lavfi", "-i", "color=c=blue:size=360x640:rate=30",
+                 "-t", "5", "-c:v", "libx264", "-threads", "2", "-y", root / "assets/portrait.mp4"])
+            render(p, root, root / "film-test-v2.mp4")
+            self.assertEqual(len(list((root / "work/render").glob("bridge-*.mp4"))), 4)
+            # A new local media file cannot claim more pixels than it actually contains.
+            p["assets"]["portrait"]["quality"]["effective_width"] = 720
+            self.assertFalse(validate(p, root, "render", allow_test=True)["ok"])
+        finally:
+            tmp.cleanup()
+
+
+if __name__ == "__main__":
+    unittest.main()

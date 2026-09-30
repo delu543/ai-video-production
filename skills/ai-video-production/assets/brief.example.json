@@ -1,0 +1,29 @@
+{
+  "topic": "",
+  "central_question": "",
+  "audience": "年轻的大众观众",
+  "style": "可信纪录片 + 自然现代科普/宣传片",
+  "research_cutoff": null,
+  "timezone": null,
+  "narration_language": "en",
+  "subtitle_order": [
+    "zh",
+    "en"
+  ],
+  "duration_target_seconds": null,
+  "aspect_ratio": "16:9",
+  "budget": {
+    "currency": "CNY",
+    "cap": 0,
+    "authorization": ""
+  },
+  "constraints": {
+    "real_footage_first": true,
+    "allow_generated_visuals": false,
+    "letterbox_masks": false,
+    "max_asset_uses": 2
+  },
+  "deliverable": "complete_local_video",
+  "publication_authorized": false,
+  "assumptions": []
+}

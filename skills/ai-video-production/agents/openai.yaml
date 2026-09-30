@@ -1,0 +1,4 @@
+interface:
+  display_name: "AI 视频制作"
+  short_description: "从简短需求制作真实素材视频，统一文案、镜头、配音、配乐与成片验收"
+  default_prompt: "使用 $ai-video-production，根据我的简短需求制作并交付完整视频。"
