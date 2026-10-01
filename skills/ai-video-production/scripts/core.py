@@ -7,7 +7,7 @@ from pathlib import Path
 import shutil
 import subprocess
 
-VERSION = "0.1.1"
+VERSION = "0.1.2"
 
 
 def read_json(path):

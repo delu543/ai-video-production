@@ -25,6 +25,9 @@
 | [Europeana](https://www.europeana.eu/) | 欧洲文化与历史档案；过滤媒体和使用条件，回到馆藏原文件 | [再利用说明](https://www.europeana.eu/en/faq)；逐项 rights statement |
 | [Internet Archive](https://archive.org/) | 早期影像/纪录片/采访的检索；查上传者、来源、原始文件 | 托管不等于许可，追到原始机构；不下载未经授权的电影/综艺 |
 | [Smithsonian Open Access](https://www.si.edu/openaccess) | 物件、发明、文化与历史照片；进入馆藏条目核对标记 | 只使用符合目标用途的具体开放资产，第三方权利仍单独检查 |
+| [The Met Open Access](https://www.metmuseum.org/hubs/open-access) / [Cleveland Museum of Art](https://www.clevelandart.org/open-access) | 实物、古代文献、绘画与专业馆藏摄影；由条目或官方 API 找原尺寸与局部细节 | 仅具体标为开放的图像按其 CC0 条件使用；馆藏年代、对象身份与图像权利分别核对 |
+| [总统图书馆研究入口](https://www.archives.gov/presidential-libraries/research) | 官方讲话、政策人物、原始照片与活动记录；追到相关馆藏条目和数字文件 | 档案来源不自动等于公共领域；核对摄制者、记录日期、限制与适用地区 |
+| 题材相关机构馆藏，例如 [IMF Archives](https://archivescatalog.imf.org/) | 国际机构、科学/经济/文化事件的原始照片与文献；目录用于核对人名、年代与场景 | 目录条目不是统一再利用许可，也不保证可直接下载；查具体权利和高质量原版 |
 | [Computer History Museum](https://computerhistory.org/) | 计算机人物、口述史、展品和事件；馆藏/官方频道查原始记录 | 研究入口；实际视频与馆藏重用需核对相关条目/许可 |
 
 ## 官方事件、采访、新闻与授权库
@@ -44,9 +47,13 @@
 | [Mixkit 音乐](https://mixkit.co/free-stock-music/) / [音效](https://mixkit.co/free-sound-effects/) | 兼容的器乐、少量环境/过门；完整听曲和尾部 | [对应许可](https://mixkit.co/license/)，具体媒体用途限制与来源留档 |
 | [Pixabay Music](https://pixabay.com/music/) | 备选统一调性的音乐，下载完整版本与证明 | [FAQ](https://pixabay.com/service/faq/)；Content ID 登记可能产生认领，保存许可/证书，不能保证“不会被认领” |
 | [YouTube Audio Library](https://support.google.com/youtube/answer/3376882) | 可用音乐/音效；按曲目条件选择 | 具体署名与使用规则，不推断对任何外部平台无限授权 |
+| [Incompetech](https://incompetech.com/music/royalty-free/licenses/) | 按作品、乐器、情绪寻找已创作的器乐；同主题或不同配器版本可支持全片递进 | 按选曲生成/保存署名与具体许可；免费署名方式与付费免署名方式分开，不自动购买 |
+| [Scott Buckley Music Library](https://www.scottbuckley.com.au/library/) | 电影、环境与器乐作品；可按情绪、风格、乐器筛选，回到作品下载页 | 库说明为 CC BY 4.0；保留具体曲目署名、修改说明与使用条件，不能保证没有 Content ID 认领 |
 | [Freesound](https://freesound.org/) | 精确环境/机械音效 | 单条许可不同，注意 CC0/CC BY/NC；禁止用不相干音效假冒真实现场 |
 | 原始采访/事件音轨 | 真人原话、现场空间与交互反馈 | 与画面一并核对上下文和许可，原音不由 AI 重演 |
 
 ## 搜索记录
 
 保存重要查询、候选原链接、选/弃理由与下载规格。找不到合格视频时，先扩展语言、机构档案与原发布者，再考虑高质量照片。源数量不等于质量：目标是每个叙事单元有最贴切、最清晰的证据。
+
+音乐同样跨库检索。按参考的乐器、情绪、速度、密度和递进寻找相近授权作品，实际听所用乐句；不只搜索“史诗”“电影感”。排除 AI 生成标记、来源不明音轨和无授权的商业名曲。本次新增馆藏/音乐入口核查日期：2026-10-01；不保证后续链接、许可和免费条件不变。
