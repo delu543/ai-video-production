@@ -4,7 +4,7 @@
 
 这是一套面向 Codex 的真实素材视频制作 Skill 与工程工具。适用于历史、科技科普、纪录短片、品牌和产品宣传：用事实与具体影像讲清内容，用自然人声、合理的音乐与镜头衔接形成完整观看体验。
 
-**当前版本：0.1.3。** 已沉淀制作规范，并提供可运行的本地工程、字幕、混音、剪辑和验收工具。研究、素材语义判断与艺术决策由 Agent 执行；需要可用的网页能力、经授权的配音服务及真实素材。它不会仅凭一个 CLI 自动替你完成事实研究，也不承诺主观“完美”。
+**当前版本：0.1.4。** 已沉淀制作规范，并提供可运行的本地工程、字幕、混音、剪辑和验收工具。研究、素材语义判断与艺术决策由 Agent 执行；需要可用的网页能力、经授权的配音服务及真实素材。它不会仅凭一个 CLI 自动替你完成事实研究，也不承诺主观“完美”。
 
 ## 快速使用
 
@@ -39,7 +39,7 @@ python3 skills/ai-video-production/scripts/video.py doctor
 | 画面 | 全幅构图，无上下黑条、叠字、廉价效果；档案/照片保内容融入 | [画面与转场](skills/ai-video-production/references/picture.md) |
 | 镜头 | 每个镜头说明作用，每个边界说明前后关系；切换方式服从逻辑 | [镜头与转场](skills/ai-video-production/references/picture.md) |
 | 人声 | 自然青年讲解，清楚稳健；试音定方向，专名校对，原声有语境 | [配音与原声](skills/ai-video-production/references/voice.md) |
-| BGM | 寻找相近授权作品；统一声音世界，乐句与画面一起起伏；宁小勿大，原声窗口退让 | [音乐与混音](skills/ai-video-production/references/music.md) |
+| BGM | 寻找相近授权作品；自然音色与叙事统一，数字/法律可整段留白；保留有依据的声音细节，宁小勿大 | [音乐与混音](skills/ai-video-production/references/music.md) |
 | 字幕 | 最终音轨对齐，中上英下可配置；换行/空间/字形实际检查 | [字幕规范](skills/ai-video-production/references/captions.md) |
 | 成本/交付 | 先记账再调用，未知结果不重付；可播放成片、工程、来源与验收分开 | [服务与费用](skills/ai-video-production/references/cost-and-providers.md)、[交付门](skills/ai-video-production/references/delivery.md) |
 

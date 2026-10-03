@@ -43,7 +43,7 @@ B 开始 = 5.0 − 0.6 = 4.4s
 
 `audio_cues` 的 `start` 是全片时间；`source_in` 是音频源入点；`duration` 为使用长度；`envelope=[[秒, dB], ...]` 的秒从该 cue 开始，节点递增线性插值，首尾维持端点。为空时使用 `gain_db`。包络存在时它是完整增益曲线，不再叠加 gain_db。`fade_in/out` 在音量包络之后叠加。
 
-`role` 为 narration/original/music/ambience。音乐 cue 必须写 selection_reason，且全片有 music_plan。脚本不推断声音的情绪、不自动 duck；设计者将退让/恢复节点写到包络。`amix normalize=0` 保留设计相对平衡，随后整体二遍 loudnorm；总响度归一不能纠正被音乐盖住的人声。
+`role` 为 narration/original/music/ambience。同期原话与后期补入环境声/拟音在来源说明中区分，不增加新的role枚举。音乐cue必须写selection_reason，且全片有music_plan。可在music_plan的 `unscored_windows=[{start,end,reason}]` 记录无乐窗口（全片时间），并记录声音细节策略与实际听审状态；这些是设计记录，当前CLI不自动验证窗口是否无音乐或曲目是否合适。无乐用不安排music cue或明示包络实现，不能把整个混音静音。脚本不推断声音的情绪、不自动 duck；设计者将退让/恢复节点写到包络。`amix normalize=0` 保留设计相对平衡，随后整体二遍 loudnorm；总响度归一不能纠正被音乐盖住的人声。
 
 ## 检查阶段与边界
 

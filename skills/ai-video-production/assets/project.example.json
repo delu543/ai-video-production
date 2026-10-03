@@ -174,7 +174,7 @@
   ],
   "master_audio": "audio/master.wav",
   "music_plan": {
-    "palette": "柔和器乐、清晰脉冲、温暖克制，不争抢语言",
+    "palette": "题材一致、自然稀疏的器乐质感；节拍由内容需要决定，不默认电子脉冲",
     "segments": [
       {
         "start": 0,
@@ -186,7 +186,10 @@
         "end": 9.4,
         "intent": "解释机制，适度推进"
       }
-    ]
+    ],
+    "unscored_windows": [],
+    "detail_policy": "保留有画面依据的同期声或拟音，后期补音不宣称为同期声",
+    "audition_status": "not_reviewed"
   },
   "reuse_exceptions": {},
   "reviews": {
