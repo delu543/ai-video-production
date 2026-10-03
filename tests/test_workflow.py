@@ -114,6 +114,52 @@ class ContractTests(unittest.TestCase):
         self.p["assets"]["wide"]["origin"] = "generated"
         self.assertTrue(any("generated visuals forbidden" in e for e in self.check()["errors"]))
 
+    def test_still_permission_does_not_allow_generated_video(self):
+        self.p["quality"]["allow_generated_visuals"] = True
+        self.p["assets"]["wide"]["origin"] = "generated"
+        self.assertTrue(any("generated video forbidden" in e for e in self.check()["errors"]))
+
+    def test_authorized_still_switch_is_technical_only(self):
+        self.p["quality"]["allow_generated_visuals"] = True
+        self.p["assets"]["photo"]["origin"] = "generated"
+        self.assertTrue(self.check()["ok"])
+
+    def test_explicit_single_language_caption_needs_no_empty_second_track(self):
+        self.p["profile"]["bottom_language"] = ""
+        for cue in self.p["captions"]:
+            cue.pop("bottom")
+        self.assertTrue(self.check()["ok"])
+        ass, srt = create(self.p, self.root)
+        self.assertFalse(any(",Bottom," in line for line in ass.read_text().splitlines() if line.startswith("Dialogue:")))
+        self.assertNotIn("Workflow test.", srt.read_text())
+
+    def test_bilingual_profile_still_requires_second_language(self):
+        self.p["captions"][0]["bottom"] = ""
+        self.assertTrue(any("Caption bottom: required" in e for e in self.check()["errors"]))
+
+    def test_caption_anchor_overrides_keep_assumptions_clear(self):
+        self.p["profile"].update(bottom_language="", caption_top_y_ratio=.95)
+        for cue in self.p["captions"]:
+            cue.pop("bottom")
+        self.p["captions"][0]["caption_top_y_ratio"] = .92
+        self.assertTrue(self.check()["ok"])
+        ass, _ = create(self.p, self.root)
+        text = ass.read_text()
+        self.assertIn(r"\pos(320,331)", text)
+        self.assertIn(r"\pos(320,342)", text)
+
+    def test_caption_anchor_outside_frame_rejected(self):
+        self.p["captions"][0]["caption_top_y_ratio"] = 1.1
+        self.assertFalse(self.check()["ok"])
+        with self.assertRaises(ValueError):
+            create(self.p, self.root)
+
+    def test_generated_music_rejected_but_narration_allowed(self):
+        self.p["assets"]["voice"]["origin"] = "generated"
+        self.assertTrue(self.check()["ok"])
+        self.p["assets"]["music"]["origin"] = "generated"
+        self.assertTrue(any("AI music" in e for e in self.check()["errors"]))
+
     def test_unknown_rights_block_publish(self):
         self.p["assets"]["wide"]["rights_status"] = "needs_review"
         report = validate(self.p, self.root, "publish", allow_test=True)

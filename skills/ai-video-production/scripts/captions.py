@@ -1,5 +1,6 @@
 """Bilingual ASS with separate anchors; no full-width background bars."""
 from pathlib import Path
+from core import caption_anchors
 
 
 def ass_time(seconds):
@@ -29,8 +30,7 @@ def create(project, directory):
     top_size = round(p.get("top_font_size", 40) * scale)
     bottom_size = round(p.get("bottom_font_size", 34) * scale)
     # Top anchor grows upward, bottom anchor grows downward: multi-line pairs cannot collide.
-    top_y = round(height * .83)
-    bottom_y = top_y + round(13 * scale)
+    caption_anchors(p)  # Validate defaults even for an empty caption track.
     margin = round(width * .05)
     header = f"""[Script Info]
 ScriptType: v4.00+
@@ -47,10 +47,14 @@ Format: Layer,Start,End,Style,Name,MarginL,MarginR,MarginV,Effect,Text
 """
     events, srt = [], []
     for i, cue in enumerate(project.get("captions", []), 1):
+        top_y, bottom_y = caption_anchors(p, cue)
         for field, style, y in (("top", "Top", top_y), ("bottom", "Bottom", bottom_y)):
+            if not cue.get(field):
+                continue
             tag = r"{\pos(" + f"{width // 2},{y}" + r")\fad(50,70)}"
             events.append(f"Dialogue: 0,{ass_time(cue['start'])},{ass_time(cue['end'])},{style},,0,0,0,,{tag}{escape_ass(cue[field])}")
-        srt.append(f"{i}\n{srt_time(cue['start'])} --> {srt_time(cue['end'])}\n{cue['top']}\n{cue['bottom']}\n")
+        content = "\n".join(cue[field] for field in ("top", "bottom") if cue.get(field))
+        srt.append(f"{i}\n{srt_time(cue['start'])} --> {srt_time(cue['end'])}\n{content}\n")
     ass_path, srt_path = directory / "captions.ass", directory / "captions.srt"
     ass_path.write_text(header + "\n".join(events) + "\n", encoding="utf-8")
     srt_path.write_text("\n".join(srt), encoding="utf-8")

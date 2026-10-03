@@ -7,7 +7,7 @@ from pathlib import Path
 import shutil
 import subprocess
 
-VERSION = "0.1.2"
+VERSION = "0.1.3"
 
 
 def read_json(path):
@@ -73,6 +73,19 @@ def number(value, label, minimum=0):
     return value
 
 
+def caption_anchors(profile, cue=None):
+    """Optional normalized anchors share one contract between preflight and ASS."""
+    cue = cue or {}
+    height = profile["height"]
+    top = number(cue.get("caption_top_y_ratio", profile.get("caption_top_y_ratio", .83)), "caption_top_y_ratio")
+    bottom = number(cue.get("caption_bottom_y_ratio", profile.get("caption_bottom_y_ratio", top + 13 / 1080)), "caption_bottom_y_ratio")
+    if top >= 1 or bottom >= 1:
+        raise ValueError("Caption anchors must remain inside the frame")
+    if profile.get("bottom_language", "en") and bottom <= top:
+        raise ValueError("Caption bottom anchor must follow top anchor")
+    return round(height * top), round(height * bottom)
+
+
 def timing(project):
     """Durations include transition overlap. Global boundaries avoid rounding drift."""
     fps = project["profile"]["fps"]
@@ -111,6 +124,7 @@ def validate(project, root, stage="design", allow_test=False):
                 raise ValueError(f"{field}: integer required")
         if profile["width"] % 2 or profile["height"] % 2:
             errors.append("Width/height must be even for yuv420p")
+        caption_anchors(profile)
         rows, frames = timing(project)
         if not rows:
             errors.append("No shots")
@@ -185,6 +199,7 @@ def validate(project, root, stage="design", allow_test=False):
                 errors.append(f"Source {group}: {count} uses exceeds limit {limit}")
         previous_end = 0
         for cue in project.get("captions", []):
+            caption_anchors(profile, cue)
             start = number(cue["start"], "caption.start")
             end = number(cue["end"], "caption.end")
             if start < previous_end or end <= start or end > total + 1 / profile["fps"]:
@@ -192,6 +207,10 @@ def validate(project, root, stage="design", allow_test=False):
             previous_end = end
             for field in ("top", "bottom"):
                 text = cue.get(field, "")
+                if field == "bottom" and not profile.get("bottom_language", "en"):
+                    if text:
+                        errors.append("Caption bottom: text present while bottom language is disabled")
+                    continue
                 if not text or len(text.splitlines()) > 2:
                     errors.append(f"Caption {field}: required, at most two explicit lines")
                 if len(text) > (90 if profile.get(field + "_language") == "en" else 50):
@@ -209,6 +228,8 @@ def validate(project, root, stage="design", allow_test=False):
                 errors.append(f"Audio {cue.get('id')}: interval exceeds timeline/source")
             if cue.get("role") not in ("narration", "original", "music", "ambience"):
                 errors.append("Unknown audio role")
+            if cue.get("role") == "music" and assets[aid].get("origin") == "generated":
+                errors.append("Generated AI music is forbidden")
             if cue.get("role") == "music" and not cue.get("selection_reason"):
                 errors.append("Music cue needs a narrative selection reason")
             if number(cue.get("fade_in", 0), "fade_in") + number(cue.get("fade_out", 0), "fade_out") > length:
@@ -232,6 +253,8 @@ def validate(project, root, stage="design", allow_test=False):
             origin = asset.get("origin")
             if origin == "synthetic_test" and not allow_test:
                 errors.append(f"Asset {aid}: synthetic fixture forbidden in production")
+            if origin == "generated" and asset.get("kind") == "video":
+                errors.append(f"Asset {aid}: generated video forbidden; still-image permission is not motion authorization")
             if origin == "generated" and asset.get("kind") != "audio" and not project.get("quality", {}).get("allow_generated_visuals", False):
                 errors.append(f"Asset {aid}: generated visuals forbidden")
             if origin not in ("real", "archival", "self_recorded", "authored_graphic", "generated", "synthetic_test"):
