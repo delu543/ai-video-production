@@ -7,7 +7,7 @@ from pathlib import Path
 import shutil
 import subprocess
 
-VERSION = "0.1.4"
+VERSION = "0.2.0"
 
 
 def read_json(path):
@@ -257,8 +257,10 @@ def validate(project, root, stage="design", allow_test=False):
                 errors.append(f"Asset {aid}: generated video forbidden; still-image permission is not motion authorization")
             if origin == "generated" and asset.get("kind") != "audio" and not project.get("quality", {}).get("allow_generated_visuals", False):
                 errors.append(f"Asset {aid}: generated visuals forbidden")
-            if origin not in ("real", "archival", "self_recorded", "authored_graphic", "generated", "synthetic_test"):
+            if origin not in ("real", "archival", "self_recorded", "authored_graphic", "authored_audio", "generated", "synthetic_test"):
                 errors.append(f"Asset {aid}: origin missing/invalid")
+            if origin == "authored_audio" and (asset.get("kind") != "audio" or not asset.get("rights_basis")):
+                errors.append(f"Asset {aid}: authored_audio is for self-composed audio and must name its source/rights basis")
             if not asset.get("rights_status"):
                 errors.append(f"Asset {aid}: rights status missing")
             if stage == "publish" and (asset.get("rights_status") != "cleared" or not asset.get("rights_basis")):

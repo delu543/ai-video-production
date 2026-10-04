@@ -10,9 +10,9 @@ def frame_count(path):
 
 
 def encode_args(profile):
-    return ["-an", "-c:v", "libx264", "-preset", profile.get("preset", "veryfast"),
-            "-crf", str(profile.get("crf", 18)), "-threads", "2", "-pix_fmt", "yuv420p",
-            "-r", str(profile["fps"]), "-fps_mode", "cfr"]
+    # Intermediates (raw -> core/bridge -> concat) are lossless; profile CRF applies once, at final export.
+    return ["-an", "-c:v", "libx264", "-preset", "ultrafast", "-qp", "0",
+            "-threads", "2", "-pix_fmt", "yuv420p", "-r", str(profile["fps"]), "-fps_mode", "cfr"]
 
 
 def checked_render(cmd, output, frames, profile):

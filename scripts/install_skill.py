@@ -9,6 +9,11 @@ import sys
 import time
 
 SOURCE = Path(__file__).resolve().parent.parent / "skills" / "ai-video-production"
+TARGETS = {
+    "codex": "~/.codex/skills/ai-video-production",
+    "claude": "~/.claude/skills/ai-video-production",
+    "agents": "~/.agents/skills/ai-video-production",
+}
 
 
 def inventory(root):
@@ -45,11 +50,14 @@ def install(destination, update=False):
 
 if __name__ == "__main__":
     p = argparse.ArgumentParser(description=__doc__)
-    p.add_argument("--destination", default="~/.codex/skills/ai-video-production")
+    p.add_argument("--target", choices=sorted(TARGETS), default="codex",
+                   help="Agent whose skill directory receives the package (default: codex)")
+    p.add_argument("--destination", help="Explicit install path; overrides --target")
     p.add_argument("--update", action="store_true")
     args = p.parse_args()
     try:
-        print(json.dumps(install(args.destination, args.update), ensure_ascii=False, indent=2))
+        destination = args.destination or TARGETS[args.target]
+        print(json.dumps(install(destination, args.update), ensure_ascii=False, indent=2))
     except (ValueError, OSError) as exc:
         print(str(exc), file=sys.stderr)
         sys.exit(1)

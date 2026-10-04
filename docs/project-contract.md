@@ -35,7 +35,7 @@ B 开始 = 5.0 − 0.6 = 4.4s
 
 `framing=cover` 按比例铺满裁切，`contain` 保留内容并使用柔化背景。`crop=[w,h,x,y]` 是原片像素，裁切后再缩放；`quality.effective_width/height` 必须反映裁切损失与真实细节，探测只能排除明显夸大。
 
-`origin` 区分 real、archival、self_recorded、authored_graphic（准确自制图表）、generated、synthetic_test。图表只在解释有必要时使用，并注明数据来源；不能将生成场景改标为图表规避真实素材要求。
+`origin` 区分 real、archival、self_recorded、authored_graphic（准确自制图表）、authored_audio（自编配乐/音效，仅限音频且须写 rights_basis）、generated、synthetic_test。图表只在解释有必要时使用，并注明数据来源；不能将生成场景改标为图表规避真实素材要求。
 
 照片 `zoom` 支持 cover 的 0..0.08 缓推（例如 0.03 为到 1.03x）；复杂或保内容照片运动使用专用工具。`transition` 当前支持 cut/dissolve；每个边界写 relation，cut 另有 cut_reason。不能因为渲染器支持 cut 就忽略逻辑。
 

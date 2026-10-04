@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
-"""CLI for the reusable real-footage workflow. No paid or download requests."""
+"""CLI for the reusable real-footage workflow. The only paid path is `voice`, gated by the cost ledger; no downloads."""
 import argparse
 import json
+import os
 from pathlib import Path
 import shutil
 import sys
@@ -44,7 +45,9 @@ def doctor():
     if result["tools"]["ffmpeg"]["available"]:
         filters = run([binary("ffmpeg"), "-hide_banner", "-filters"]).stdout
         result["required_filters"] = {name: name in filters for name in ("ass", "blend", "loudnorm", "gblur", "amix")}
-    result["tts_asr_browser"] = "Use available authorized tools; not implied by local FFmpeg"
+    from tts import KEY_FILE
+    result["tts"] = {"minimax_key_configured": bool(os.environ.get("MINIMAX_API_KEY") or KEY_FILE.is_file()),
+                     "note": "`voice` reserves budget before each paid line; other ASR/browser tools are external"}
     return result
 
 
@@ -55,7 +58,10 @@ def main(argv=None):
     commands.add_parser("doctor")
     start = commands.add_parser("init")
     start.add_argument("directory")
-    for name in ("check", "captions", "mix", "render", "qa", "review-frames", "reserve", "settle"):
+    voices = commands.add_parser("voice-list", help="List MiniMax system voices (free)")
+    voices.add_argument("--contains", default="")
+    voices.add_argument("--region", choices=("auto", "global", "cn"), default="auto")
+    for name in ("check", "captions", "mix", "render", "qa", "review-frames", "reserve", "settle", "voice"):
         sub = commands.add_parser(name)
         sub.add_argument("project", help="Canonical project.json")
         if name in ("check", "mix", "render"):
@@ -72,6 +78,16 @@ def main(argv=None):
             sub.add_argument("--fingerprint", required=True)
             sub.add_argument("--maximum", type=float, required=True)
             sub.add_argument("--pricing-basis", required=True)
+        if name == "voice":
+            sub.add_argument("--voice", required=True, help="Provider voice_id chosen after a short sample")
+            sub.add_argument("--model", default="speech-2.8-hd")
+            sub.add_argument("--speed", type=float, default=1.0)
+            sub.add_argument("--language", default="auto", help="Provider language_boost, e.g. Chinese, English")
+            sub.add_argument("--beats", default="", help="Comma-separated beat ids; default all narrated beats")
+            sub.add_argument("--sample-text", help="Synthesize only this ~10 s sample, not the script")
+            sub.add_argument("--price", type=float, required=True, help="Live price per 10k characters in budget currency")
+            sub.add_argument("--pricing-basis", required=True, help="Where/when the price was checked")
+            sub.add_argument("--region", choices=("auto", "global", "cn"), default="auto")
         if name == "settle":
             sub.add_argument("--id", required=True)
             sub.add_argument("--amount", type=float, required=True)
@@ -83,6 +99,9 @@ def main(argv=None):
             result = doctor()
         elif args.command == "init":
             result = init_project(args.directory)
+        elif args.command == "voice-list":
+            from tts import list_voices
+            result = {"voices": list_voices(args.region, args.contains)}
         else:
             project_path = Path(args.project).resolve()
             root, project = project_path.parent, read_json(project_path)
@@ -110,6 +129,14 @@ def main(argv=None):
             elif args.command == "reserve":
                 from costs import reserve
                 result = reserve(root, project, args.id, args.provider, args.fingerprint, args.maximum, args.pricing_basis)
+            elif args.command == "voice":
+                from tts import narration_items, synthesize
+                items = ([("sample-" + args.voice.replace(" ", "_").replace("/", "_"), args.sample_text)] if args.sample_text
+                         else narration_items(project, [b for b in args.beats.split(",") if b]))
+                if not items:
+                    raise ValueError("No narration to synthesize")
+                result = synthesize(root, project, items, args.voice, args.model, args.speed, args.language,
+                                    args.price, args.pricing_basis, args.region)
             elif args.command == "settle":
                 from costs import settle
                 result = settle(root, args.id, args.amount, args.response_id, args.invoice_verified)

@@ -39,3 +39,22 @@
 原话通常一两个完整语义单位（可约 4–12 秒，按语境定），记录人物、拍摄时间、上下文、原句、翻译、源入出点与使用依据。保留原音，不用 AI 假扮历史人物，不把 AI 配音说成当年原声。年份是当年还是回顾采访要标清。
 
 提前轻退 BGM 和旁白，原音自然接管；结束后给一点尾声再回旁白。字幕译意忠实，不能截掉否定/限定词。口型画面与原声必须同步，跨镜头 L-cut 不得改变原话含义。仅有文字引语时标“引述”，不虚构录像。
+
+## MiniMax 接入
+
+`video.py voice` 当前适配 MiniMax 同步 T2A（`/v1/t2a_v2`）。Key 按地区绑定：国际站 `api.minimax.io`、中国站 `api.minimaxi.com`，`--region auto` 先用免费的音色列表接口探测哪个地区接受该 Key，再发收费请求。
+
+```bash
+# 密钥：环境变量 MINIMAX_API_KEY，或权限 600 的 ~/.config/minimax/api_key；不写进工程或仓库
+python3 scripts/video.py voice-list --contains Mandarin
+python3 scripts/video.py voice project.json --voice "<voice_id>" --sample-text "约 10 秒、含专名和年份的试音句" \
+  --price <每万字符单价> --pricing-basis "<官网价格页与查询日期>"
+python3 scripts/video.py voice project.json --voice "<已选 voice_id>" --speed 1.05 --language Chinese \
+  --price <单价> --pricing-basis "<来源与日期>"
+```
+
+- 只把 `beats[].narration` 送入 TTS；原话、字幕、制作说明不送。`--beats b3,b7` 只重做出错的段。
+- 每段输出到 `audio/narration/<beat>.mp3`，记录写入 `work/tts-manifest.json`；字幕和时间线按实际音频时长重新对齐。
+- 中文字符可能按 2 倍计费：预留按最坏情况，结算按返回的 `usage_characters`。
+- 供应商音色名不代表效果，仍按上文试音方法实际听辨后选定。
+- 密钥若曾出现在聊天、日志或截图中，用完后到供应商后台作废并更换。

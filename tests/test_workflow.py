@@ -18,6 +18,8 @@ from render import render, frame_count
 from qa import audit, review_frames
 from costs import reserve, settle
 from video import init_project
+from render import encode_args
+import tts
 
 
 def fixture():
@@ -221,6 +223,90 @@ class ContractTests(unittest.TestCase):
         (path / "SKILL.md").write_text("local changes")
         with self.assertRaises(ValueError):
             installer.install(path, update=True)
+
+    def test_installer_targets_claude_and_agents(self):
+        spec = importlib.util.spec_from_file_location("installer", ROOT / "scripts/install_skill.py")
+        installer = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(installer)
+        self.assertTrue(installer.TARGETS["claude"].startswith("~/.claude/skills/"))
+        self.assertTrue(installer.TARGETS["codex"].startswith("~/.codex/skills/"))
+
+    def test_authored_audio_is_audio_only_and_needs_basis(self):
+        self.p["assets"]["music"]["origin"] = "authored_audio"
+        self.assertTrue(self.check()["ok"])
+        self.p["assets"]["music"].pop("rights_basis")
+        self.assertTrue(any("authored_audio" in e for e in self.check()["errors"]))
+        self.p["assets"]["photo"]["origin"] = "authored_audio"
+        self.assertTrue(any("authored_audio" in e for e in self.check()["errors"]))
+
+    def test_render_intermediates_are_lossless(self):
+        args = encode_args(self.p["profile"])
+        self.assertEqual(args[args.index("-qp") + 1], "0")
+        self.assertNotIn("-crf", args)
+
+
+class VoiceTests(unittest.TestCase):
+    """Fake provider only: CI never sends text or money to a real TTS service."""
+
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+        self.root = Path(self.tmp.name)
+        self.p = fixture()
+        self.p["budget"] = {"cap": 1, "currency": "USD", "authorization": "test-only budget, fake provider"}
+        self.calls = 0
+
+    def tearDown(self):
+        self.tmp.cleanup()
+
+    def ok(self, host, path, body, timeout=120):
+        self.calls += 1
+        return {"data": {"audio": b"ID3fake".hex(), "status": 2}, "trace_id": "t1",
+                "extra_info": {"usage_characters": 2 * len(body["text"]), "audio_length": 900},
+                "base_resp": {"status_code": 0, "status_msg": "success"}}
+
+    def run_tts(self, poster, items=None):
+        return tts.synthesize(self.root, self.p, items or tts.narration_items(self.p), "voice-a",
+                              price_per_10k_chars=1.0, pricing_basis="test price", poster=poster)
+
+    def test_paid_lines_are_reserved_settled_and_cached(self):
+        first = self.run_tts(self.ok)
+        self.assertEqual(first["charged_lines"], 2)
+        ledger = read_json(self.root / "costs.json")["entries"]
+        self.assertTrue(all(e["status"] == "settled" and e["amount"] > 0 for e in ledger))
+        again = self.run_tts(self.ok)
+        self.assertEqual((again["charged_lines"], self.calls), (0, 2))
+        self.assertTrue((self.root / "audio/narration/b1.mp3").is_file())
+
+    def test_unknown_result_is_not_paid_twice(self):
+        def drop(host, path, body, timeout=120):
+            raise TimeoutError("connection dropped after send")
+        with self.assertRaises(TimeoutError):
+            self.run_tts(drop)
+        self.assertEqual(read_json(self.root / "costs.json")["entries"][0]["status"], "reserved")
+        with self.assertRaises(ValueError):
+            self.run_tts(self.ok)
+        self.assertEqual(self.calls, 0)
+
+    def test_definite_provider_error_settles_at_zero(self):
+        def reject(host, path, body, timeout=120):
+            return {"base_resp": {"status_code": 1004, "status_msg": "auth failed"}}
+        with self.assertRaises(ValueError):
+            self.run_tts(reject)
+        entry = read_json(self.root / "costs.json")["entries"][0]
+        self.assertEqual((entry["status"], entry["amount"]), ("settled", 0))
+
+    def test_price_evidence_and_budget_required(self):
+        with self.assertRaises(ValueError):
+            tts.synthesize(self.root, self.p, tts.narration_items(self.p), "voice-a", poster=self.ok)
+        self.p["budget"] = {}
+        with self.assertRaises(ValueError):
+            self.run_tts(self.ok)
+        self.assertEqual(self.calls, 0)
+
+    def test_only_narration_goes_to_tts(self):
+        self.p["beats"].append({"id": "q1", "original_quote": "Real speaker words.", "fact_ids": []})
+        self.assertEqual([i for i, _ in tts.narration_items(self.p)], ["b1", "b2"])
+        self.assertEqual([i for i, _ in tts.narration_items(self.p, ["b2"])], ["b2"])
 
 
 class EncodeTests(unittest.TestCase):

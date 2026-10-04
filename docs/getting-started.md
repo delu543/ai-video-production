@@ -11,7 +11,7 @@
 - macOS/Linux，Python 3.9+；工具无第三方 Python 运行依赖。
 - FFmpeg 6+ 与可用 FFprobe；FFmpeg 包含 libx264、libass、blend、gblur、loudnorm、amix。`doctor` 报告实际版本/滤镜，发现缺项先解决受影响能力。
 - 支持目标语言且许可适用的字体，例如 Noto Sans CJK；本仓库不捆绑字体。字体不存在时 libass 可能回退，必须检查实际字形。
-- 网页检索/操作、TTS、ASR/对齐由当前 Agent 工具提供；CLI 不自动注册服务、不读取任何私人配置、不付费、不下载第三方素材。
+- 网页检索/操作、ASR/对齐由当前 Agent 工具提供。TTS 可用内置的 `voice` 命令（MiniMax），它只读取 `MINIMAX_API_KEY` 或 `~/.config/minimax/api_key`，并在账本授权内付费；其余命令不注册服务、不付费、不下载第三方素材。
 
 如果二进制不在 PATH，可设置 `FFMPEG_BIN`、`FFPROBE_BIN` 到实际绝对路径。它们是本机环境配置，不提交 Git。不要把他人电脑路径写进脚本。
 
@@ -36,6 +36,6 @@ python3 skills/ai-video-production/scripts/video.py review-frames ../video-proje
 
 ## 安装与更新
 
-`scripts/install_skill.py` 将完整 Skill 包复制到 `~/.codex/skills/ai-video-production`，写安装清单。重复安装同一内容不重写；已存在来源不明/被本地改动的 Skill 会拒绝覆盖。`--update` 仅更新具有匹配安装清单的版本，旧版本保留到隐藏备份目录，不删除。仓库规范为唯一真源，不直接改安装副本。
+`scripts/install_skill.py` 将完整 Skill 包复制到 Agent 的 Skill 目录并写安装清单：默认 `--target codex`（`~/.codex/skills/`），也可用 `--target claude`（`~/.claude/skills/`）或 `--target agents`（`~/.agents/skills/`），`--destination` 可指定任意路径。重复安装同一内容不重写；已存在来源不明/被本地改动的 Skill 会拒绝覆盖。`--update` 仅更新具有匹配安装清单的版本，旧版本保留到隐藏备份目录，不删除。仓库规范为唯一真源，不直接改安装副本。
 
 可以用 `--destination` 安装到测试目录。工具本地结构校验通过，不代表客户端已在新会话自动识别；首次调用需观察它实际读取此 Skill。现有窗口可以明确指定 `$ai-video-production` 或直接指向 SKILL.md。
